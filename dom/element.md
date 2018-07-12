@@ -102,7 +102,7 @@ btn.addEventListener('click', function () {
 }, false);
 ```
 
-注意，该属性与 CSS 设置是互相独立的。CSS 对这个元素可见性的设置，`Element.hidden`并不能反映出来。也就是说，这个属性并不难用来判断当前元素的实际可见性。
+注意，该属性与 CSS 设置是互相独立的。CSS 对这个元素可见性的设置，`Element.hidden`并不能反映出来。也就是说，这个属性并不能用来判断当前元素的实际可见性。
 
 CSS 的设置高于`Element.hidden`。如果 CSS 指定了该元素不可见（`display: none`）或可见（`display: hidden`），那么`Element.hidden`并不能改变该元素实际的可见性。换言之，这个属性只在 CSS 没有明确设定当前元素的可见性时才有效。
 
@@ -116,15 +116,13 @@ HTML 元素可以设置`contentEditable`属性，使得元素的内容可以编�
 
 上面代码中，`<div>`元素有`contenteditable`属性，因此用户可以在网页上编辑这个区块的内容。
 
-`Element.contentEditable`属性返回一个字符串，表示是否设置了`contenteditable`属性，有三种可能的值。
+`Element.contentEditable`属性返回一个字符串，表示是否设置了`contenteditable`属性，有三种可能的值。该属性可写。
 
 - `"true"`：元素内容可编辑
 - `"false"`：元素内容不可编辑
 - `"inherit"`：元素是否可编辑，继承了父元素的设置
 
-`Element.isContentEditable`属性返回一个布尔值，同样表示是否设置了`contenteditable`属性。
-
-这两个属性都是只读属性。
+`Element.isContentEditable`属性返回一个布尔值，同样表示是否设置了`contenteditable`属性。该属性只读。
 
 ### Element.attributes
 
@@ -426,7 +424,7 @@ document.documentElement.scrollTop
 
 ### Element.offsetHeight，Element.offsetWidth
 
-`Element.offsetHeight`属性返回一个整数，表示元素的 CSS 垂直高度（单位像素），包括元素本身的高度、padding 和 border，以及垂直滚动条的高度（如果存在滚动条）。
+`Element.offsetHeight`属性返回一个整数，表示元素的 CSS 垂直高度（单位像素），包括元素本身的高度、padding 和 border，以及水平滚动条的高度（如果存在滚动条）。
 
 `Element.offsetWidth`属性表示元素的 CSS 水平宽度（单位像素），其他都与`Element.offsetHeight`一致。
 
@@ -776,11 +774,7 @@ Object.keys(rect) // []
 对于盒状元素（比如`<div>`和`<p>`），该方法返回的对象中只有该元素一个成员。对于行内元素（比如`<span>`、`<a>`、`<em>`），该方法返回的对象有多少个成员，取决于该元素在页面上占据多少行。这是它和`Element.getBoundingClientRect()`方法的主要区别，后者对于行内元素总是返回一个矩形。
 
 ```html
-<span id="inline">
-Hello World
-Hello World
-Hello World
-</span>
+<span id="inline">Hello World Hello World Hello World</span>
 ```
 
 上面代码是一个行内元素`<span>`，如果它在页面上占据三行，`getClientRects`方法返回的对象就有三个成员，如果它在页面上占据一行，`getClientRects`方法返回的对象就只有一个成员。
@@ -796,6 +790,18 @@ el.getClientRects()[0].width // 105.908203125
 ```
 
 这个方法主要用于判断行内元素是否换行，以及行内元素的每一行的位置偏移。
+
+注意，如果行内元素包括换行符，那么该方法会把换行符考虑在内。
+
+```html
+<span id="inline">
+  Hello World
+  Hello World
+  Hello World
+</span>
+```
+
+上面代码中，`<span>`节点内部有三个换行符，即使 HTML 语言忽略换行符，将它们显示为一行，`getClientRects()`方法依然会返回三个成员。如果行宽设置得特别窄，上面的`<span>`元素显示为6行，那么就会返回六个成员。
 
 ### Element.insertAdjacentElement()
 

@@ -496,7 +496,7 @@ evt.cancelable  // false
 
 当`Event.cancelable`属性为`true`时，调用`Event.preventDefault()`就可以取消这个事件，阻止浏览器对该事件的默认行为。
 
-如果事件不能取消，调用`Event.preventDefault()`会报错。所以使用这个方法之前，最好用`Event.cancelable`属性判断一下是否可以取消。
+如果事件不能取消，调用`Event.preventDefault()`会没有任何效果。所以使用这个方法之前，最好用`Event.cancelable`属性判断一下是否可以取消。
 
 ```javascript
 function preventEvent(event) {
@@ -597,18 +597,31 @@ evt.isTrusted // false
 
 上面代码中，`evt`对象是脚本产生的，所以`isTrusted`属性返回`false`。
 
-## Event 对象的实例方法
+### Event.detail
 
-### event.preventDefault()
-
-`preventDefault`方法取消浏览器对当前事件的默认行为，比如点击链接后，浏览器跳转到指定页面，或者按一下空格键，页面向下滚动一段距离。该方法生效的前提是，事件对象的`cancelable`属性为`true`，如果为`false`，则调用该方法没有任何效果。
-
-该方法不会阻止事件的进一步传播（`stopPropagation`方法可用于这个目的）。只要在事件的传播过程中（捕获阶段、目标阶段、冒泡阶段皆可），使用了`preventDefault`方法，该事件的默认方法就不会执行。
+`Event.detail`属性只有浏览器的 UI （用户界面）事件才具有。该属性返回一个数值，表示事件的某种信息。具体含义与事件类型相关。比如，对于`click`和`dbclick`事件，`Event.detail`是鼠标按下的次数（`1`表示单击，`2`表示双击，`3`表示三击）；对于鼠标滚轮事件，`Event.detail`是滚轮正向滚动的距离，负值就是负向滚动的距离，返回值总是3的倍数。
 
 ```javascript
-// HTML代码为
-// <input type="checkbox" id="my-checkbox" />
+// HTML 代码如下
+// <p>Hello</p>
+function giveDetails(e) {
+  console.log(e.detail);
+}
 
+document.querySelector('p').onclick = giveDetails;
+```
+
+## Event 对象的实例方法
+
+### Event.preventDefault()
+
+`Event.preventDefault`方法取消浏览器对当前事件的默认行为。比如点击链接后，浏览器默认会跳转到另一个页面，使用这个方法以后，就不会跳转了；再比如，按一下空格键，页面向下滚动一段距离，使用这个方法以后也不会滚动了。该方法生效的前提是，事件对象的`cancelable`属性为`true`，如果为`false`，调用该方法没有任何效果。
+
+注意，该方法只是取消事件对当前元素的默认影响，不会阻止事件的传播。如果要阻止传播，可以使用`stopPropagation()`或`stopImmediatePropagation()`方法。
+
+```javascript
+// HTML 代码为
+// <input type="checkbox" id="my-checkbox" />
 var cb = document.getElementById('my-checkbox');
 
 cb.addEventListener(
@@ -618,11 +631,16 @@ cb.addEventListener(
 );
 ```
 
-上面代码为点击单选框的事件，设置监听函数，取消默认行为。由于浏览器的默认行为是选中单选框，所以这段代码会导致无法选中单选框。
+上面代码中，浏览器的默认行为是单击会选中单选框，取消这个行为，就导致无法选中单选框。
 
 利用这个方法，可以为文本输入框设置校验条件。如果用户的输入不符合条件，就无法将字符输入文本框。
 
 ```javascript
+// HTML 代码为
+// <input type="text" id="my-input" />
+var input = document.getElementById('my-input');
+input.addEventListener('keypress', checkName, false);
+
 function checkName(e) {
   if (e.charCode < 97 || e.charCode > 122) {
     e.preventDefault();
@@ -630,11 +648,11 @@ function checkName(e) {
 }
 ```
 
-上面函数设为文本框的`keypress`监听函数后，将只能输入小写字母，否则输入事件的默认事件（写入文本框）将被取消。
+上面代码为文本框的`keypress`事件设定监听函数后，将只能输入小写字母，否则输入事件的默认行为（写入文本框）将被取消，导致不能向文本框输入内容。
 
-### event.stopPropagation()
+### Event.stopPropagation()
 
-`stopPropagation`方法阻止事件在 DOM 中继续传播，防止再触发定义在别的节点上的监听函数，但是不包括在当前节点上新定义的事件监听函数。
+`stopPropagation`方法阻止事件在 DOM 中继续传播，防止再触发定义在别的节点上的监听函数，但是不包括在当前节点上其他的事件监听函数。
 
 ```javascript
 function stopEvent(e) {
@@ -644,13 +662,13 @@ function stopEvent(e) {
 el.addEventListener('click', stopEvent, false);
 ```
 
-将上面函数指定为监听函数，会阻止事件进一步冒泡到el节点的父节点。
+上面代码中，`click`事件将不会进一步冒泡到`el`节点的父节点。
 
-### event.stopImmediatePropagation()
+### Event.stopImmediatePropagation()
 
-`stopImmediatePropagation`方法阻止同一个事件的其他监听函数被调用。
+`Event.stopImmediatePropagation`方法阻止同一个事件的其他监听函数被调用，不管监听函数定义在当前节点还是其他节点。也就是说，该方法阻止事件的传播，比`Event.stopPropagation()`更彻底。
 
-如果同一个节点对于同一个事件指定了多个监听函数，这些函数会根据添加的顺序依次调用。只要其中有一个监听函数调用了stopImmediatePropagation方法，其他的监听函数就不会再执行了。
+如果同一个节点对于同一个事件指定了多个监听函数，这些函数会根据添加的顺序依次调用。只要其中有一个监听函数调用了`Event.stopImmediatePropagation`方法，其他的监听函数就不会再执行了。
 
 ```javascript
 function l1(e){
@@ -665,204 +683,79 @@ el.addEventListener('click', l1, false);
 el.addEventListener('click', l2, false);
 ```
 
-上面代码在el节点上，为click事件添加了两个监听函数l1和l2。由于l1调用了stopImmediatePropagation方法，所以l2不会被调用。
+上面代码在`el`节点上，为`click`事件添加了两个监听函数`l1`和`l2`。由于`l1`调用了`event.stopImmediatePropagation`方法，所以`l2`不会被调用。
 
-## UIEvent
+### Event.composedPath()
 
-UIEvent.detail
-
-`UIEvent.detail`属性返回一个数值，表示事件的某种信息。具体含义与事件类型有关，对于鼠标事件，表示鼠标按键在某个位置按下的次数，比如对于dblclick事件，detail属性的值总是2。
+`Event.composedPath()`返回一个数组，成员是事件的最底层节点和依次冒泡经过的所有上层节点。
 
 ```javascript
-function giveDetails(e) {
-  this.textContent = e.detail;
-}
+// HTML 代码如下
+// <div>
+//   <p>Hello</p>
+// </div>
+var div = document.querySelector('div');
+var p = document.querySelector('p');
 
-el.onclick = giveDetails;
+div.addEventListener('click', function (e) {
+  console.log(e.composedPath());
+}, false);
+// [p, div, body, html, document, Window]
 ```
 
-## 自定义事件和事件模拟
+上面代码中，`click`事件的最底层节点是`p`，向上依次是`div`、`body`、`html`、`document`、`Window`。
 
-除了浏览器预定义的那些事件，用户还可以自定义事件，然后手动触发。
+## CustomEvent 接口
+
+CustomEvent 接口用于生成自定义的事件实例。那些浏览器预定义的事件，虽然可以手动生成，但是往往不能在事件上绑定数据。如果需要在触发事件的同时，传入指定的数据，就可以使用 CustomEvent 接口生成的自定义事件对象。
+
+浏览器原生提供`CustomEvent()`构造函数，用来生成 CustomEvent 事件实例。
 
 ```javascript
-// 新建事件实例
-var event = new Event('build');
-
-// 添加监听函数
-elem.addEventListener('build', function (e) { ... }, false);
-
-// 触发事件
-elem.dispatchEvent(event);
+new CustomEvent(type, options)
 ```
 
-上面代码触发了自定义事件，该事件会层层向上冒泡。在冒泡过程中，如果有一个元素定义了该事件的监听函数，该监听函数就会触发。
+`CustomEvent()`构造函数接受两个参数。第一个参数是字符串，表示事件的名字，这是必须的。第二个参数是事件的配置对象，这个参数是可选的。`CustomEvent`的配置对象除了接受 Event 事件的配置属性，只有一个自己的属性。
 
-由于IE不支持这个API，如果在IE中自定义事件，需要使用后文的“老式方法”。
+- `detail`：表示事件的附带数据，默认为`null`。
 
-### CustomEvent()
-
-Event构造函数只能指定事件名，不能在事件上绑定数据。如果需要在触发事件的同时，传入指定的数据，需要使用CustomEvent构造函数生成自定义的事件对象。
+下面是一个例子。
 
 ```javascript
 var event = new CustomEvent('build', { 'detail': 'hello' });
+
 function eventHandler(e) {
   console.log(e.detail);
 }
+
+document.body.addEventListener('build', function (e) {
+  console.log(e.detail);
+});
+
+document.body.dispatchEvent(event);
 ```
 
-上面代码中，CustomEvent构造函数的第一个参数是事件名称，第二个参数是一个对象，该对象的detail属性会绑定在事件对象之上。
+上面代码中，我们手动定义了`build`事件。该事件触发后，会被监听到，从而输出该事件实例的`detail`属性（即字符串`hello`）。
 
 下面是另一个例子。
 
 ```javascript
-var myEvent = new CustomEvent("myevent", {
+var myEvent = new CustomEvent('myevent', {
   detail: {
-    foo: "bar"
+    foo: 'bar'
   },
   bubbles: true,
   cancelable: false
 });
 
-el.addEventListener('myevent', function(event) {
+el.addEventListener('myevent', function (event) {
   console.log('Hello ' + event.detail.foo);
 });
 
 el.dispatchEvent(myEvent);
 ```
 
-IE不支持这个方法，可以用下面的垫片函数模拟。
-
-```javascript
-(function () {
-  function CustomEvent ( event, params ) {
-    params = params || { bubbles: false, cancelable: false, detail: undefined };
-    var evt = document.createEvent( 'CustomEvent' );
-    evt.initCustomEvent( event, params.bubbles, params.cancelable, params.detail );
-    return evt;
-   }
-
-  CustomEvent.prototype = window.Event.prototype;
-
-  window.CustomEvent = CustomEvent;
-})();
-```
-
-### 事件的模拟
-
-有时，需要在脚本中模拟触发某种类型的事件，这时就必须使用这种事件的构造函数。
-
-下面是一个通过MouseEvent构造函数，模拟触发click鼠标事件的例子。
-
-```javascript
-function simulateClick() {
-  var event = new MouseEvent('click', {
-    'bubbles': true,
-    'cancelable': true
-  });
-  var cb = document.getElementById('checkbox');
-  cb.dispatchEvent(event);
-}
-```
-
-### 自定义事件的老式写法
-
-老式浏览器不一定支持各种类型事件的构造函数。因此，有时为了兼容，会用到一些非标准的方法。这些方法未来会被逐步淘汰，但是目前浏览器还广泛支持。除非是为了兼容老式浏览器，尽量不要使用。
-
-**（1）document.createEvent()**
-
-document.createEvent方法用来新建指定类型的事件。它所生成的Event实例，可以传入dispatchEvent方法。
-
-```javascript
-// 新建Event实例
-var event = document.createEvent('Event');
-
-// 事件的初始化
-event.initEvent('build', true, true);
-
-// 加上监听函数
-document.addEventListener('build', doSomething, false);
-
-// 触发事件
-document.dispatchEvent(event);
-```
-
-createEvent方法接受一个字符串作为参数，可能的值参见下表“数据类型”一栏。使用了某一种“事件类型”，就必须使用对应的事件初始化方法。
-
-|事件类型|事件初始化方法|
-|--------|--------------|
-|UIEvents|event.initUIEvent|
-|MouseEvents|event.initMouseEvent|
-|MutationEvents|event.initMutationEvent|
-|HTMLEvents|event.initEvent|
-|Event|event.initEvent|
-|CustomEvent|event.initCustomEvent|
-|KeyboardEvent|event.initKeyEvent|
-
-**（2）event.initEvent()**
-
-事件对象的initEvent方法，用来初始化事件对象，还能向事件对象添加属性。该方法的参数必须是一个使用`Document.createEvent()`生成的Event实例，而且必须在dispatchEvent方法之前调用。
-
-```javascript
-var event = document.createEvent('Event');
-event.initEvent('my-custom-event', true, true, {foo:'bar'});
-someElement.dispatchEvent(event);
-```
-
-initEvent方法可以接受四个参数。
-
-- type：事件名称，格式为字符串。
-- bubbles：事件是否应该冒泡，格式为布尔值。可以使用event.bubbles属性读取它的值。
-- cancelable：事件是否能被取消，格式为布尔值。可以使用event.cancelable属性读取它的值。
-- option：为事件对象指定额外的属性。
-
-### 事件模拟的老式写法
-
-事件模拟的非标准做法是，对document.createEvent方法生成的事件对象，使用对应的事件初始化方法进行初始化。比如，click事件对象属于MouseEvent对象，也属于UIEvent对象，因此要用initMouseEvent方法或initUIEvent方法进行初始化。
-
-**（1）event.initMouseEvent()**
-
-initMouseEvent方法用来初始化Document.createEvent方法新建的鼠标事件。该方法必须在事件新建（document.createEvent方法）之后、触发（dispatchEvent方法）之前调用。
-
-initMouseEvent方法有很长的参数。
-
-```javascript
-event.initMouseEvent(type, canBubble, cancelable, view,
-  detail, screenX, screenY, clientX, clientY,
-  ctrlKey, altKey, shiftKey, metaKey,
-  button, relatedTarget
-);
-```
-
-上面这些参数的含义，参见MouseEvent构造函数的部分。
-
-模仿并触发click事件的写法如下。
-
-```javascript
-var simulateDivClick = document.createEvent('MouseEvents');
-
-simulateDivClick.initMouseEvent('click',true,true,
-  document.defaultView,0,0,0,0,0,false,
-  false,false,0,null,null
-);
-
-divElement.dispatchEvent(simulateDivClick);
-```
-
-**（2）UIEvent.initUIEvent()**
-
-`UIEvent.initUIEvent()`用来初始化一个UI事件。该方法必须在事件新建（document.createEvent方法）之后、触发（dispatchEvent方法）之前调用。
-
-```javascript
-event.initUIEvent(type, canBubble, cancelable, view, detail)
-```
-
-该方法的参数含义，可以参见MouseEvent构造函数的部分。其中，detail参数是一个数值，含义与事件类型有关，对于鼠标事件，这个值表示鼠标按键在某个位置按下的次数。
-
-```javascript
-var e = document.createEvent("UIEvent");
-e.initUIEvent("click", true, true, window, 1);
-```
+上面代码也说明，CustomEvent 的事件实例，除了具有 Event 接口的实例属性，还具有`detail`属性。
 
 ## 参考链接
 
